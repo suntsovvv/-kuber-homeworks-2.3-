@@ -6,22 +6,6 @@
 
 ------
 
-### Чеклист готовности к домашнему заданию
-
-1. Установленное K8s-решение (например, MicroK8s).
-2. Установленный локальный kubectl.
-3. Редактор YAML-файлов с подключённым GitHub-репозиторием.
-
-------
-
-### Инструменты и дополнительные материалы, которые пригодятся для выполнения задания
-
-1. [Описание](https://kubernetes.io/docs/concepts/configuration/secret/) Secret.
-2. [Описание](https://kubernetes.io/docs/concepts/configuration/configmap/) ConfigMap.
-3. [Описание](https://github.com/wbitt/Network-MultiTool) Multitool.
-
-------
-
 ### Задание 1. Создать Deployment приложения и решить возникшую проблему с помощью ConfigMap. Добавить веб-страницу
 
 Создал Deployment приложения, состоящего из контейнеров nginx и multitool, так же создал ConfigMap для добавления переменной окружения контейнера multitool:
@@ -333,5 +317,6 @@ user@microk8s:~/kuber-homeworks-2.3$ curl https://suntsovvv.tplinkdns.com -k
 </body>
 ```
 Проверил из вне :
+![image](https://github.com/user-attachments/assets/5a278729-d526-4df8-9f26-fc6c136f5d45)
 
 ------
