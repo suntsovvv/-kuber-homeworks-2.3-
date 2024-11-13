@@ -102,8 +102,8 @@ data:
                  ||----w |
                  ||     ||
     </pre>
-    </html>
     </body>
+    </html>
 ```
 Добавил service:
 ```yaml
@@ -175,18 +175,163 @@ user@microk8s:~/kuber-homeworks-2.3$ curl 192.168.105
 
 ### Задание 2. Создать приложение с вашей веб-страницей, доступной по HTTPS 
 
-1. Создать Deployment приложения, состоящего из Nginx.
-2. Создать собственную веб-страницу и подключить её как ConfigMap к приложению.
-3. Выпустить самоподписной сертификат SSL. Создать Secret для использования сертификата.
-4. Создать Ingress и необходимый Service, подключить к нему SSL в вид. Продемонстировать доступ к приложению по HTTPS. 
-4. Предоставить манифесты, а также скриншоты или вывод необходимых команд.
+Создать Deployment приложения, состоящего из Nginx, добавил configmap,ingress,service.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: homework
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+         - containerPort: 80
+        volumeMounts:
+        - name: api2-html
+          mountPath: /usr/share/nginx/html
+      
+      volumes:
+      - name: api2-html
+        configMap:
+          name: api2-html
 
-------
+---          
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api2-html
+  namespace: homework
+data:
+  index.html: |
+    <html>
+    <body>
+    
+    <pre>
+      hello tls
+      --------
+         \   ^__^
+          \  (oo)\_______
+             (__)\       )\/\
+                 ||----w |
+                 ||     ||
+    </pre>
+    </html>
+    </body>
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+     nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: suntsovvv.tplinkdns.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-svc
+            port:
+              number: 80
+  tls:
+    - hosts:
+      - suntsovvv.tplinkdns.com
+      secretName: secret-tls
 
-### Правила приёма работы
+    
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+  namespace: homework
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      name: nginx
+      port: 80
+      targetPort: 80
+``` 
+Создал tls сертификат :
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=suntsovvv.tplinkdns.com/O=suntsovvv.tplinkdns.com"
+```
+Создал secret в интерактивном режиме:
+```bash
+user@microk8s:~/kuber-homeworks-2.3$ kubectl create secret tls secret-tls --cert=tls.crt --key=tls.key
+secret/secret-tls created
+```
+Запустил deployment:
+```bash
+user@microk8s:~/kuber-homeworks-2.3$ kubectl apply -f nginx-deployment.yaml 
+deployment.apps/nginx-deployment created
+configmap/api2-html created
+ingress.networking.k8s.io/my-ingress created
+service/nginx-svc created
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get po
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-84f484c787-f557p   1/1     Running   0          78s
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get svc
+NAME        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+nginx-svc   ClusterIP   10.152.183.80   <none>        80/TCP    84s
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get secrets secret-tls 
+NAME         TYPE                DATA   AGE
+secret-tls   kubernetes.io/tls   2      2m31s
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get ingress my-ingress 
+NAME         CLASS   HOSTS                     ADDRESS     PORTS     AGE
+my-ingress   nginx   suntsovvv.tplinkdns.com   127.0.0.1   80, 443   105s
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get con
+configmaps                controllerrevisions.apps  
+user@microk8s:~/kuber-homeworks-2.3$ kubectl get configmaps 
+NAME               DATA   AGE
+api2-html          1      116s
+kube-root-ca.crt   1      2d21h
+user@microk8s:~/kuber-homeworks-2.3$ 
+```
+Проверил:
+```bash
+user@microk8s:~/kuber-homeworks-2.3$ curl https://suntsovvv.tplinkdns.com 
+curl: (60) SSL certificate problem: self-signed certificate
+More details here: https://curl.se/docs/sslcerts.html
 
-1. Домашняя работа оформляется в своём GitHub-репозитории в файле README.md. Выполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.
-2. Файл README.md должен содержать скриншоты вывода необходимых команд `kubectl`, а также скриншоты результатов.
-3. Репозиторий должен содержать тексты манифестов или ссылки на них в файле README.md.
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+user@microk8s:~/kuber-homeworks-2.3$ curl https://suntsovvv.tplinkdns.com -k
+<html>
+<body>
+
+<pre>
+  hello tls
+  --------
+     \   ^__^
+      \  (oo)\_______
+         (__)\       )\/\
+             ||----w |
+             ||     ||
+</pre>
+</html>
+</body>
+```
+Проверил из вне :
 
 ------
