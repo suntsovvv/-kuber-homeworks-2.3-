@@ -165,6 +165,8 @@ user@microk8s:~/kuber-homeworks-2.3$ curl 192.168.105
 </body>
 ```
 На моем машрутизаторе настроен ddns, настроил проброс на машину с k8s и проверил в браузере из вне:
+![image](https://github.com/user-attachments/assets/e79e50b9-ea06-46b1-80f1-0b1b8bb3be9d)
+
 
 
 
